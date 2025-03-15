@@ -1,4 +1,5 @@
 from fastapi import FastAPI, File, UploadFile
+from fastapi.middleware.cors import CORSMiddleware  # ✅ Import CORS Middleware
 import numpy as np
 import cv2
 import tensorflow as tf
@@ -17,6 +18,15 @@ label_classes = np.load(LABELS_PATH)
 
 app = FastAPI()
 
+# ✅ Add CORS Middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Change to ["http://localhost:3000"] or your Expo URL for security
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all HTTP methods (GET, POST, etc.)
+    allow_headers=["*"],  # Allows all headers (Content-Type, Authorization, etc.)
+)
+
 # Function to preprocess image
 def preprocess_image(image_bytes):
     image = Image.open(io.BytesIO(image_bytes))
@@ -27,6 +37,8 @@ def preprocess_image(image_bytes):
 
 @app.post("/predict/")
 async def predict(file: UploadFile = File(...)):
+    if not file:
+        return {"error": "No file received"}
     image_bytes = await file.read()
     image = preprocess_image(image_bytes)
     predictions = model.predict(image)
